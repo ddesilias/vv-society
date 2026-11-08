@@ -1,85 +1,55 @@
-# V&V Society - Signature et paiement MonCash
+# V&V Society
 
-Application Next.js pour le portail investisseur V&V Society :
+Portail web pour présenter V&V Society et accompagner le parcours investisseur : formulaire, signature manuscrite, paiement MonCash et consultation du contrat.
 
-- landing page d'entreprise ;
-- formulaire investisseur ;
-- signature manuscrite sur canvas ;
-- creation d'une session de paiement MonCash via Bazik ;
-- webhook Bazik avec verification HMAC sur body brut ;
-- reverification serveur du statut de commande Bazik ;
-- page de contrat signe et imprimable.
+[Voir la démonstration](https://vv-iota-taupe.vercel.app/fr) · [Configuration détaillée](docs/SETUP.md)
 
-## Stack choisie
+## Ce que le projet met en œuvre
 
-- Next.js 14 App Router
-- Tailwind CSS
-- API Routes Next.js en runtime Node.js
-- PostgreSQL Neon pour les donnees persistantes en production
-- Client HTTP serveur vers `https://api.bazik.io`
+- Interface Next.js 14, TypeScript et Tailwind CSS, avec navigation multilingue via next-intl.
+- Saisie d’un dossier investisseur et signature sur canvas.
+- Création des commandes MonCash côté serveur via l’API HTTP Bazik.
+- Persistance PostgreSQL Neon en production ; stockage JSON disponible pour le développement local.
+- Vérification HMAC des webhooks sur le corps brut, prise en compte des identifiants d’événements et revérification serveur du statut des commandes.
+- Consultation et impression du contrat signé.
 
-En developpement local, l'application utilise `data/investments.json` si
-`DATABASE_URL` n'est pas configure. En production Vercel, `DATABASE_URL` est
-obligatoire : le stockage local Vercel est en lecture seule et les donnees
-doivent rester dans PostgreSQL.
-
-Le SDK `@bazik/sdk` n'est pas utilise dans cette version. La doc JavaScript
-actuelle ne documente que `payments.create({ amount, currency, customer })`,
-alors que ce flux a besoin des champs MonCash complets : `gdes`, `userID`,
-`successUrl`, `errorUrl`, `webhookUrl`, `referenceId`, `metadata` et
-`GET /order/{orderId}`.
-
-## Configuration
-
-Copier `.env.example` vers `.env.local`, puis renseigner les cles Bazik :
-
-```bash
-APP_URL=http://localhost:3000
-DATABASE_URL=
-BAZIK_API_URL=https://api.bazik.io
-BAZIK_USER_ID=
-BAZIK_SECRET_KEY=
-BAZIK_WEBHOOK_SECRET=
+```mermaid
+flowchart LR
+    A[Interface Next.js] --> B[Routes API serveur]
+    B --> C[(PostgreSQL Neon)]
+    B --> D[API Bazik / MonCash]
+    D --> E[Webhook signé]
+    E --> B
 ```
 
-Sans `BAZIK_USER_ID` et `BAZIK_SECRET_KEY`, l'application passe automatiquement
-en mode demo.
+## Branches
 
-`BAZIK_WEBHOOK_SECRET` est obligatoire pour accepter les webhooks Bazik. Il doit
-correspondre au secret de l'environnement utilise, sandbox ou production.
+`main` reste la branche par défaut. Le développement du parcours signature et paiement se poursuit sur [`fix-image`](https://github.com/ddesilias/vv-society/tree/fix-image). Consulter cette branche pour retrouver les fichiers d’intégration décrits ici ; les fonctionnalités peuvent différer entre branches.
 
-## Commandes
+## Démarrage local
 
 ```bash
-npm run dev
-npm run build
+git clone https://github.com/ddesilias/vv-society.git
+cd vv-society
+git switch fix-image
+pnpm install
+cp .env.example .env.local
+pnpm dev
 ```
 
-## Routes utiles
+Renseigner les variables de `.env.local` selon la [documentation de configuration](docs/SETUP.md). `DATABASE_URL` est obligatoire en production. Sans les identifiants Bazik, le code utilise son mode de démonstration. Les secrets et la vérification des paiements restent côté serveur.
 
-- `/fr` : accueil entreprise V&V Society
-- `/fr/investir` : formulaire de signature et paiement
-- `/fr/paiement/demo?investmentId=...` : paiement demo local
-- `/fr/paiement/succes?investmentId=...` : retour paiement live
-- `/fr/paiement/erreur?investmentId=...` : retour paiement annule
-- `/fr/contrat/[investmentId]` : contrat signe
-- `/api/bazik/webhook` : webhook Bazik
-- `/api/investments/[investmentId]/verify` : reverification du paiement
+## Repères dans le code
 
-## Notes de production
+| Emplacement sur `fix-image` | Responsabilité |
+| --- | --- |
+| `src/server/bazik.ts` | Client HTTP Bazik, cache du token et reprises sur erreurs transitoires |
+| `src/server/investments.ts` | Persistance des dossiers |
+| `src/app/api/bazik/webhook/route.ts` | Réception et vérification des événements de paiement |
+| `src/app` | Pages, formulaires et routes API |
 
-Pour deployer sur Vercel, creer une base PostgreSQL Neon, ajouter `DATABASE_URL`
-dans les variables d'environnement Vercel, puis redeployer. Les webhooks Bazik
-doivent pointer vers l'URL publique HTTPS de production.
+## État de la démonstration
 
-Points deja couverts par l'integration :
+La vitrine publique est consultable. Le parcours transactionnel complet, la signature d’un contrat et les paiements réels ne font pas partie de la vérification de présentation. La présence d’un webhook signé ne constitue pas à elle seule un audit de sécurité.
 
-- secrets Bazik uniquement cote serveur ;
-- token Bazik `access_token` mis en cache selon `expires_in` ;
-- limite MonCash de 75 000 HTG par transaction ;
-- `referenceId` unique persiste avant l'appel API ;
-- signature webhook `X-Bazik-Signature` verifiee avec `X-Bazik-Timestamp`,
-  `X-Bazik-Event-Id` et le body brut ;
-- idempotence webhook avec `eventId` ou `transactionId` ;
-- erreurs utilisateur sans exposition des secrets ou du detail interne.
-# vv
+Les informations de licence du dépôt sont conservées dans [LICENSE](LICENSE).
