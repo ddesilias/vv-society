@@ -24,14 +24,13 @@ flowchart LR
 
 ## Branches
 
-`main` reste la branche par défaut. Le développement du parcours signature et paiement se poursuit sur [`fix-image`](https://github.com/ddesilias/vv-society/tree/fix-image). Consulter cette branche pour retrouver les fichiers d’intégration décrits ici ; les fonctionnalités peuvent différer entre branches.
+`main` est la branche par défaut et contient le parcours décrit ici. La branche [`fix-image`](https://github.com/ddesilias/vv-society/tree/fix-image) conserve le contexte du développement de cette intégration.
 
 ## Démarrage local
 
 ```bash
 git clone https://github.com/ddesilias/vv-society.git
 cd vv-society
-git switch fix-image
 pnpm install
 cp .env.example .env.local
 pnpm dev
@@ -41,7 +40,7 @@ Renseigner les variables de `.env.local` selon la [documentation de configuratio
 
 ## Repères dans le code
 
-| Emplacement sur `fix-image` | Responsabilité |
+| Emplacement | Responsabilité |
 | --- | --- |
 | `src/server/bazik.ts` | Client HTTP Bazik, cache du token et reprises sur erreurs transitoires |
 | `src/server/investments.ts` | Persistance des dossiers |
